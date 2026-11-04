@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "supabase:upload-images": "node --env-file=.env.local scripts/supabase-upload-images.mjs",
     "supabase:verify": "node --env-file=.env.local scripts/supabase-verify.mjs",
-    "supabase:verify-roles": "node --env-file=.env.local scripts/supabase-verify-roles.mjs"
+    "supabase:verify-roles": "node --env-file=.env.local scripts/supabase-verify-roles.mjs",
+    "test:auth": "node --experimental-strip-types --test tests/auth-config.test.mjs",
+    "supabase:verify-profiles": "node --env-file=.env.local scripts/supabase-verify-profiles.mjs"
   },
   "dependencies": {
     "next": "16.4.4",

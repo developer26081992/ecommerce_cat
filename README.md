@@ -21,8 +21,11 @@ Use `npm run build` and `npm start` for a production build. `npm run typecheck` 
 - A navigation item count and bag persistence using browser localStorage.
 - Corrupt stored data is discarded; missing or unavailable products are removed when the bag loads. Current server catalogue prices and stock are used for the bag.
 - Loading, error, missing product, sold out, and empty bag states.
+- Email/password sign-up, confirmation, sign-in, sign-out, and a protected `/account` page.
+- Cookie-based sessions refreshed in Next.js Proxy, with server-verified account access.
+- Private user profiles created automatically when an Auth user is added.
 
-The first phase intentionally stops at catalogue and cart. Authentication, orders, payment checkout, Stripe webhooks, stock reservations, and deployment remain to be implemented. The checkout button is visibly disabled. No payment is taken and no order is created. Adding to a bag does not reserve stock.
+Orders, payment checkout, Stripe webhooks, stock reservations, and deployment remain to be implemented. The checkout button is visibly disabled. No payment is taken and no order is created. Adding to a bag does not reserve stock.
 
 ## Supabase setup (optional)
 
@@ -46,6 +49,19 @@ Connection status (4 November 2026): project `vvnrgyivkqdnhcasowhx` is configure
 
 SQL uses the case-sensitive `imageUrl`, `categoryId`, and `createdAt` columns from the brief, plus a unique `slug` and `featured` flag needed by the UI. Keep quoted column names when editing SQL.
 
+## Authentication setup
+
+1. Apply `supabase/migrations/003_profiles.sql` once in the SQL Editor, after the catalogue migrations. Existing Auth users are backfilled. The profile trigger runs with a fixed empty search path; anonymous profile access is denied and signed-in users can read/update only their own profile. Only the display-name column is writable by users.
+2. Enable the Email provider in Supabase Authentication. Keep email confirmation enabled for real accounts.
+3. In Authentication URL Configuration, set Site URL to `http://127.0.0.1:3000` and add `http://127.0.0.1:3000/auth/callback` under Redirect URLs. Use the same hostname when browsing the app.
+4. Set `NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000` in `.env.local`. On Vercel, replace this with the actual HTTPS deployment origin and add its callback URL in Supabase before testing signup.
+5. Open `/sign-up`, create an account with your own email address, and follow the confirmation email in the same browser. The default confirmation flow uses PKCE and `/auth/callback`. Mail delivery depends on your Supabase email/SMTP configuration; automated tests do not send signup emails.
+6. `/auth/confirm` also supports signup/email token hashes for a custom confirmation template: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`. This optional template supports confirmation without a PKCE verifier in that browser.
+
+The website never uses the administrative secret key. Server Actions use the publishable key and Supabase cookie sessions; `/account` verifies the user with Supabase on the server and profile queries remain subject to RLS. Sign-out ends the current browser session and preserves the device's shopping bag. Redirect destinations are restricted to implemented internal pages.
+
+Validation: `npm run test:auth` checks redirect handling (requires Node 22.6+ for TypeScript stripping; tested with Node 24). `npm run supabase:verify-profiles` checks the signup trigger, profile isolation between two users, allowed own-name updates, and denied ID/deletion operations, then removes both test accounts and their profiles. Migration 003 and these live profile tests passed on 4 November 2026. Browser tests passed sign-in errors, successful login, reload persistence, sign-out, protected routes, signup token confirmation, invalid confirmation handling, and external-redirect rejection. Real email delivery remains a manual end-to-end check.
+
 ## Notes on the assignment
 
 The supplied paper names Next.js 13. This implementation uses the current Next.js 16 App Router for maintained framework support while retaining the requested routing architecture. Confirm the exact version requirement with your assessor if strict version matching is required.
@@ -54,6 +70,6 @@ AI assistance: this project was created with OpenAI Codex (ChatGPT), including a
 
 GitHub repository: https://github.com/developer26081992/ecommerce_cat
 
-Live URL: not deployed. Authentication, orders, payments, and Vercel deployment remain to be implemented.
+Live URL: not deployed. Orders, payments, and Vercel deployment remain to be implemented.
 
 For a local source handoff, include the source files, `package.json`, `package-lock.json`, `.env.example`, `public/`, and `supabase/`. Exclude real environment files, `.next`, caches, and `node_modules`; install dependencies using `npm ci` on the destination device.
