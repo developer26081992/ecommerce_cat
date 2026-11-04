@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseConfig } from '@/lib/auth-config';
 
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === '/api/stripe/webhook') return NextResponse.next();
   const config = getSupabaseConfig();
   if (!config) return NextResponse.next();
   let response = NextResponse.next({ request });

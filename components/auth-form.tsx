@@ -13,7 +13,7 @@ export function AuthForm({ mode, next }: { mode: 'sign-in' | 'sign-up'; next: st
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
-  const destination = next === '/cart' ? '/cart' : '/account';
+  const destination = next === '/cart' || next === '/orders' ? next : '/account';
   const switchHref = `${signingUp ? '/sign-in' : '/sign-up'}?next=${encodeURIComponent(destination)}`;
 
   if (state.message) {

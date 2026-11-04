@@ -4,7 +4,8 @@ import { safeNext, siteOrigin } from '../lib/auth-config.ts';
 
 test('post-login destinations reject external, encoded, and unsupported paths', () => {
   assert.equal(safeNext('/cart'), '/cart');
-  for (const value of ['https://example.com', '//example.com', '/\\example.com', '/%2fexample.com', '/cart?next=evil', null, undefined, ['//example.com'], '/orders']) {
+  assert.equal(safeNext('/orders'), '/orders');
+  for (const value of ['https://example.com', '//example.com', '/\\example.com', '/%2fexample.com', '/cart?next=evil', null, undefined, ['//example.com'], '/orders?user=someone']) {
     assert.equal(safeNext(value), '/account');
   }
 });

@@ -6,7 +6,7 @@ export function getSupabaseConfig() {
 
 // Restrict post-login destinations to implemented, internal pages.
 export function safeNext(value: unknown): string {
-  return value === '/cart' ? '/cart' : '/account';
+  return value === '/cart' || value === '/orders' ? value : '/account';
 }
 
 export function siteOrigin() {

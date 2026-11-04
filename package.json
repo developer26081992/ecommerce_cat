@@ -11,22 +11,25 @@
     "supabase:verify": "node --env-file=.env.local scripts/supabase-verify.mjs",
     "supabase:verify-roles": "node --env-file=.env.local scripts/supabase-verify-roles.mjs",
     "test:auth": "node --experimental-strip-types --test tests/auth-config.test.mjs",
-    "supabase:verify-profiles": "node --env-file=.env.local scripts/supabase-verify-profiles.mjs"
+    "supabase:verify-profiles": "node --env-file=.env.local scripts/supabase-verify-profiles.mjs",
+    "test:checkout": "node --experimental-strip-types --test tests/checkout.test.mjs tests/checkout-attempt.test.mjs",
+    "supabase:verify-checkout": "node --env-file=.env.local scripts/supabase-verify-checkout.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.0.0",
     "next": "16.4.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.0.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "stripe": "^23.1.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.0",
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0"
+    "typescript": "^5.9.0"
   }
 }

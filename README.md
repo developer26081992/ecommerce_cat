@@ -1,6 +1,6 @@
 # Field & Form
 
-A responsive homeware catalogue and persistent shopping bag built with Next.js App Router, TypeScript, React Context, Tailwind CSS, and Supabase.
+A responsive homeware shop built with Next.js App Router, TypeScript, React Context, Tailwind CSS, Supabase, and Stripe Checkout.
 
 ## Run locally
 
@@ -24,8 +24,11 @@ Use `npm run build` and `npm start` for a production build. `npm run typecheck` 
 - Email/password sign-up, confirmation, sign-in, sign-out, and a protected `/account` page.
 - Cookie-based sessions refreshed in Next.js Proxy, with server-verified account access.
 - Private user profiles created automatically when an Auth user is added.
+- Authenticated Stripe-hosted test checkout with database prices, inventory reservations, and idempotent request handling.
+- Verified payment webhooks that atomically save paid orders and decrement stock once, plus private `/orders` history and paid confirmation pages.
+- Safe checkout cancellation and bag reconciliation that preserves unpurchased items and ignores old confirmation links.
 
-Orders, payment checkout, Stripe webhooks, stock reservations, and deployment remain to be implemented. The checkout button is visibly disabled. No payment is taken and no order is created. Adding to a bag does not reserve stock.
+Payments currently support Stripe test keys only; live keys and live webhook events are rejected. Adding items to a bag does not reserve stock. Starting checkout reserves availability, and paid fulfillment decrements product stock. Checkout is disabled until a webhook signing secret is configured. Vercel deployment and its production webhook configuration remain outstanding.
 
 ## Supabase setup (optional)
 
@@ -58,9 +61,26 @@ SQL uses the case-sensitive `imageUrl`, `categoryId`, and `createdAt` columns fr
 5. Open `/sign-up`, create an account with your own email address, and follow the confirmation email in the same browser. The default confirmation flow uses PKCE and `/auth/callback`. Mail delivery depends on your Supabase email/SMTP configuration; automated tests do not send signup emails.
 6. `/auth/confirm` also supports signup/email token hashes for a custom confirmation template: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`. This optional template supports confirmation without a PKCE verifier in that browser.
 
-The website never uses the administrative secret key. Server Actions use the publishable key and Supabase cookie sessions; `/account` verifies the user with Supabase on the server and profile queries remain subject to RLS. Sign-out ends the current browser session and preserves the device's shopping bag. Redirect destinations are restricted to implemented internal pages.
+The administrative secret key is never exposed to the browser. Authentication uses the publishable key and Supabase cookie sessions; trusted checkout/webhook server code uses a separate administrative client for payment-controlled mutations. `/account` verifies the user with Supabase on the server and profile/order reads remain subject to RLS. Sign-out ends the current browser session and preserves the device's shopping bag. Redirect destinations are restricted to implemented internal pages.
 
-Validation: `npm run test:auth` checks redirect handling (requires Node 22.6+ for TypeScript stripping; tested with Node 24). `npm run supabase:verify-profiles` checks the signup trigger, profile isolation between two users, allowed own-name updates, and denied ID/deletion operations, then removes both test accounts and their profiles. Migration 003 and these live profile tests passed on 4 November 2026. Browser tests passed sign-in errors, successful login, reload persistence, sign-out, protected routes, signup token confirmation, invalid confirmation handling, and external-redirect rejection. Real email delivery remains a manual end-to-end check.
+Validation: `npm run test:auth` checks redirect handling (requires Node 22.6+ for TypeScript stripping; tested with Node 24). `npm run supabase:verify-profiles` checks the signup trigger, profile isolation between two users, allowed own-name updates, and denied ID/deletion operations, then removes both test accounts and their profiles. Migration 003 and these live profile tests passed on 4 November 2026. Browser tests passed sign-in errors, successful login, reload persistence, sign-out, protected routes, signup token confirmation, invalid confirmation handling, and external-redirect rejection. The owner subsequently confirmed completing actual signup and email confirmation.
+
+## Stripe checkout and orders
+
+1. Apply `supabase/migrations/004_orders_checkout.sql` once after the earlier migrations. The project owner reported this completed successfully on 4 November 2026. Do not rerun `setup.sql` over the existing tables.
+2. Set `STRIPE_SECRET_KEY` to a sandbox secret or restricted key (`sk_test_` or `rk_test_`) and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` to its `pk_test_` key in ignored `.env.local`. The restricted key needs Checkout Sessions read/write access. The currently saved key successfully created, retrieved, and expired test Sessions.
+3. Install/run Stripe CLI (`npm exec --package @stripe/cli -- stripe version`). Authorize it using `npm exec --yes --package @stripe/cli -- stripe --config .cache/stripe-cli/config.toml login`, or grant Debugging Tools Write if using the application key for the CLI. Keep the CLI config directory ignored.
+4. Run `npm exec --yes --package @stripe/cli -- stripe --config .cache/stripe-cli/config.toml listen --forward-to http://127.0.0.1:3000/api/stripe/webhook --events checkout.session.completed,checkout.session.expired,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed`. Copy the CLI signing secret into `STRIPE_WEBHOOK_SECRET` in `.env.local`, then restart the shop. Keep the listener running while testing. The CLI secret differs from a deployed endpoint's secret.
+5. Sign in, add products, and choose **Continue to test checkout**. Use Stripe's public test card `4242 4242 4242 4242`, a future expiry, and any three-digit CVC. No real money is charged. Cancellation returns to the bag, expires the open Session, and releases its reservation.
+6. For Vercel, configure all environment variables and `NEXT_PUBLIC_SITE_URL` for the HTTPS deployment. Register `/api/stripe/webhook` in the same Stripe sandbox with the four events above and use that endpoint's `whsec_` value. Do not use the local CLI secret there.
+
+`POST /api/checkout` requires a verified user and matching Origin. It accepts only product IDs, integer quantities, and a request UUID; prices, totals, user IDs, and item descriptions come from server-side data. Currency is ZAR, with integer minor units used for calculation. The integration uses the current Stripe SDK's `allowed_payment_method_types` card filter. Shipping, discounts, and automatic tax are not added in this assignment checkout.
+
+Inventory reservations, paid order creation, and stock changes use service-only PostgreSQL functions and a short transaction lock. Client roles cannot create or mutate orders/reservations directly. Signed webhooks read the Session back from Stripe, verify paid status/identity/amount/currency, and finalize once per Session. The authenticated confirmation page uses the same idempotent fulfillment path as a fallback. Pending/unavailable payment states never claim success or clear a bag. `/orders` and confirmation status verify the user's ownership.
+
+Reservations are released only after verified Stripe expiry or explicit cancellation, not solely because a local timer elapsed. If event delivery fails, retry the webhook or inspect the Session before releasing a hold. Ambiguous Session-creation network failures keep their reservation and reuse the request's Stripe idempotency key; administrative reconciliation may be needed for an abandoned attempt without a saved Session ID. Do not manually reduce stock below outstanding reservations.
+
+`npm run test:checkout` checks payload validation, test-only keys, and signature tampering/expiry. `npm run supabase:verify-checkout` tests concurrent last-item reservations, request ownership, trusted pricing, amount mismatch, duplicate fulfillment, stock decrement, order privacy, client mutation denial, and release/re-reservation; it removes isolated fixtures afterward. A real ZAR40 sandbox payment also passed against the production build using a temporary test product/account. With the return page blocked, locally signed event replays created one order and decremented stock once; receipts, bag reconciliation, and cancellation UI passed. Those replays test the handler, not live Stripe-to-CLI delivery. Live local webhook forwarding still awaits CLI browser authorization; the isolated replay secret was never written to `.env.local`.
 
 ## Notes on the assignment
 
@@ -70,6 +90,6 @@ AI assistance: this project was created with OpenAI Codex (ChatGPT), including a
 
 GitHub repository: https://github.com/developer26081992/ecommerce_cat
 
-Live URL: not deployed. Orders, payments, and Vercel deployment remain to be implemented.
+Live URL: not deployed. Vercel deployment and live Stripe webhook forwarding/configuration remain to be completed. This application currently accepts sandbox payments only.
 
 For a local source handoff, include the source files, `package.json`, `package-lock.json`, `.env.example`, `public/`, and `supabase/`. Exclude real environment files, `.next`, caches, and `node_modules`; install dependencies using `npm ci` on the destination device.
