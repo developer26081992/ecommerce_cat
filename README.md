@@ -90,6 +90,10 @@ AI assistance: this project was created with OpenAI Codex (ChatGPT), including a
 
 GitHub repository: https://github.com/developer26081992/ecommerce_cat
 
-Live URL: not deployed. Local Stripe webhook forwarding is configured and verified. Vercel deployment and its separate hosted webhook endpoint remain to be completed. This application currently accepts sandbox payments only.
+Live URL: https://ecommerce-cat-ten.vercel.app/
+
+Vercel Production variables and the separate hosted Stripe webhook are configured. Public catalogue, hosted callback origin, checkout-origin enforcement, and webhook signature checks passed. A real Stripe test expiry event was acknowledged with no pending webhook deliveries. Local forwarding remains configured separately. This application accepts sandbox payments only.
+
+Final hosted authentication setup: in Supabase Authentication URL Configuration, set Site URL to `https://ecommerce-cat-ten.vercel.app` and add `https://ecommerce-cat-ten.vercel.app/auth/callback` under Redirect URLs. Keep `http://127.0.0.1:3000/auth/callback` there for local development. After saving, test signup/confirmation and checkout on the hosted shop. The Vercel environment update does not change these Supabase dashboard settings.
 
 For a local source handoff, include the source files, `package.json`, `package-lock.json`, `.env.example`, `public/`, and `supabase/`. Exclude real environment files, `.next`, caches, and `node_modules`; install dependencies using `npm ci` on the destination device.
