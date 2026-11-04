@@ -13,7 +13,8 @@
     "test:auth": "node --experimental-strip-types --test tests/auth-config.test.mjs",
     "supabase:verify-profiles": "node --env-file=.env.local scripts/supabase-verify-profiles.mjs",
     "test:checkout": "node --experimental-strip-types --test tests/checkout.test.mjs tests/checkout-attempt.test.mjs",
-    "supabase:verify-checkout": "node --env-file=.env.local scripts/supabase-verify-checkout.mjs"
+    "supabase:verify-checkout": "node --env-file=.env.local scripts/supabase-verify-checkout.mjs",
+    "stripe:listen": "node --env-file=.env.local scripts/stripe-listen.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -25,6 +26,7 @@
     "stripe": "^23.1.0"
   },
   "devDependencies": {
+    "@stripe/cli": "^1.55.8",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",

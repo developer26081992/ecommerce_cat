@@ -12,4 +12,4 @@
 - Temporary Auth users/profiles, fixture products, reservations, and database orders were removed. Stripe test Sessions remain completed or expired as a test audit trail.
 - Independent guest-cart and paid-receipt design review passed desktop/tablet/mobile. Build and TypeScript checks passed.
 
-The replay secret existed only in the temporary test server/cache, not `.env.local`. These tests do not establish live Stripe-to-CLI event forwarding. That connection awaits the owner's browser authorization; normal checkout remains disabled until a real webhook signing secret is configured.
+The replay secret existed only in the temporary test server/cache, not `.env.local`. After the owner saved a standard test secret key, real Stripe-to-CLI forwarding was configured. The CLI secret was saved privately in ignored `.env.local`, and a real Stripe `checkout.session.expired` event was forwarded to the local webhook and acknowledged with HTTP 200. Normal checkout is now enabled while the local shop and listener are running. The hosted deployment will need its own webhook endpoint/signing secret.
