@@ -1,0 +1,1 @@
+export default function Loading() { return <main id="main" className="wrap loading-page" role="status"><p className="eyebrow">FIELD & FORM</p><h1>A little moment…</h1><p>Gathering the collection for you.</p></main>; }
