@@ -28,7 +28,7 @@ Use `npm run build` and `npm start` for a production build. `npm run typecheck` 
 - Verified payment webhooks that atomically save paid orders and decrement stock once, plus private `/orders` history and paid confirmation pages.
 - Safe checkout cancellation and bag reconciliation that preserves unpurchased items and ignores old confirmation links.
 
-Payments currently support Stripe test keys only; live keys and live webhook events are rejected. Adding items to a bag does not reserve stock. Starting checkout reserves availability, and paid fulfillment decrements product stock. Checkout is disabled until a webhook signing secret is configured. Vercel deployment and its production webhook configuration remain outstanding.
+Payments currently support Stripe test keys only; live keys and live webhook events are rejected. Adding items to a bag does not reserve stock. Starting checkout reserves availability, and paid fulfillment decrements product stock. Vercel and its hosted webhook are configured. The final hosted authentication URL update and end-to-end submission checks are listed in `SUBMISSION_CHECKLIST.md`.
 
 ## Supabase setup (optional)
 
@@ -97,3 +97,5 @@ Vercel Production variables and the separate hosted Stripe webhook are configure
 Final hosted authentication setup: in Supabase Authentication URL Configuration, set Site URL to `https://ecommerce-cat-ten.vercel.app` and add `https://ecommerce-cat-ten.vercel.app/auth/callback` under Redirect URLs. Keep `http://127.0.0.1:3000/auth/callback` there for local development. After saving, test signup/confirmation and checkout on the hosted shop. The Vercel environment update does not change these Supabase dashboard settings.
 
 For a local source handoff, include the source files, `package.json`, `package-lock.json`, `.env.example`, `public/`, and `supabase/`. Exclude real environment files, `.next`, caches, and `node_modules`; install dependencies using `npm ci` on the destination device.
+
+A source ZIP is prepared locally at `submission/field-and-form-source.zip` for copying to the flash drive. It contains committed source and documentation, not credentials or installed dependencies. Extract it, run `npm ci`, and follow the setup instructions above. The ZIP is intentionally excluded from Git to avoid committing a generated archive of the repository.
